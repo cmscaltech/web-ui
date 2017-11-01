@@ -6,17 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
-  
+
     <title>OpenFlow Next Generation Project - Web GUI</title>
-  
+
     <!-- CSS -->
     <link type="text/css" href="/static/assets/css/font-awesome.min.css" rel="stylesheet">
     <link type="text/css" href="/static/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
     <link type="text/css" href="/static/assets/css/simple-sidebar.css" rel="stylesheet">
 
     <link type="text/css" href="/static/assets/css/main.css" rel="stylesheet">
     <link type="text/css" href="/static/assets/css/chart.css" rel="stylesheet">
-  
+
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -26,15 +27,19 @@
 
   </head>
 
-  <body>
+  <body class="nav-expanded">
     <script src="/static/assets/js/jquery-1.11.3.min.js"></script>
     <script src="/static/assets/js/d3.min.js"></script>
     <script src="/static/assets/js/bootstrap.min.js"></script>
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
     <script src="/static/assets/js/handlebars.min-latest.js"></script>
+    <script src="/static/assets/js/js.cookie.js"></script>
 
+    <script src="/static/assets/templates/test_tt.js"></script>
+    <script src="/static/assets/templates/test_layout.js"></script>
     <script src="/static/assets/js/charts.js"></script>
     <script src="/static/assets/js/main.js"></script>
-  
+
     <div id="wrapper">
       <!-- Sidebar -->
       <div id="sidebar-wrapper" class="sidebar sidebar-nav navbar-collapse">
@@ -42,11 +47,15 @@
           <li class="active"><a href="/"><i class="fa fa-fw fa-th-list"></i> Topology</a></li>
           <li><a href="#" data-toggle="modal" data-target="#L2RouteCalculationModal"><i class="fa fa-fw fa-exchange"></i> L2 Route Calculation</a></li>
           <li><a href="#" data-toggle="modal" data-target="#L3RouteCalculationModal"><i class="fa fa-fw fa-exchange"></i> L3 Route Calculation</a></li>
+          <li><a id="L2L3RouteManagement" href="#"><i class="fa fa-fw fa-wrench"></i> L2/L3 Route Management</a></li>
           <li><a href="/interfaces.html"><i class="fa fa-fw fa-th-list"></i> All Interfaces</a></li>
           <li><a href="/flows.html"><i class="fa fa-fw fa-th-list"></i> All Flows</a></li>
+          <li><a href="/hosts.html"><i class="fa fa-fw fa-th-list"></i> All Hosts</a></li>
+          <li><a id="ALTORouteCalculationTab" href="#" data-toggle="modal" data-target="#ALTORouteCalculationModal"><i class="fa fa-fw fa-exchange"></i> ALTO Route Calculation</a></li>
+          <li><a id="ALTORouteManagementTab" href="#"><i class="fa fa-fw fa-wrench"></i> ALTO Route Management</a></li>
         </ul>
       </div><!-- /#sidebar-wrapper -->
-  
+
       <!-- Page Content -->
       <div id="page-content-wrapper">
         <div class="container-fluid">
@@ -55,9 +64,19 @@
 
                   <div class="btn-group btn-group-sm" role="group" aria-label="...">
                     <button type="button" id="menu-toggle" class="btn btn-default"><i class="fa fa-fw fa-bars"></i> Toggle Menu</button>
-                    <button type="button" id="zoom-mode" class="btn btn-default"><i class="fa fa-search"></i> Zoom Mode</button>
-                    <button type="button" id="save-layout" class="btn btn-default"><i class="fa fa-cloud-upload"></i> Save Layout</button>
-                    <button type="button" id="load-layout" class="btn btn-default"><i class="fa fa-cloud-download"></i> Load Layout</button>
+                    <button type="button" id="zoom-mode" class="btn btn-default active"><i class="fa fa-search"></i> Zoom Mode</button>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Layout
+                        <span class="caret"></span>
+                      </button>
+                      <ul class="dropdown-menu">
+                        <li><a id="save-layout" href="#"><i class="fa fa-cloud-upload"></i> Save Layout</a></li>
+                        <li><a id="load-layout" href="#"><i class="fa fa-cloud-download"></i> Load Layout</a></li>
+                        <li><a id="toggle-fixed-layout" href="#"><i class="fa fa-toggle-on"></i> Toggle Fixed Layout</a></li>
+                      </ul>
+                    </div>
+
                     <div class="btn-group btn-group-sm" role="group">
                       <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         View
@@ -65,7 +84,8 @@
                       </button>
                       <ul class="dropdown-menu">
                         <li><a id="panel-toggle" href="#">Info Panel</a></li>
-                        <li><a id="unused-ports-toggle" href="#">Unused Ports</a></li>
+                        <li><a id="unused-ports-toggle" href="#">Toggle Unused Ports</a></li>
+                        <li><a id="unused-switches-toggle" href="#">Toggle Unused Switches</a></li>
                       </ul>
                     </div>
 
@@ -80,6 +100,8 @@
                         <li><a id="change-switch-label-description" href="#">Description</a></li>
                         <li><a id="change-switch-label-address" href="#">IP Address</a></li>
                         <li><a id="change-switch-label-manufacturer" href="#">Manufacturer</a></li>
+                        <li><a id="change-switch-label-hardware" href="#">Hardware</a></li>
+                        <li><a id="change-switch-label-customize" href="#">Customized Name</a></li>
                       </ul>
                     </div>
 
@@ -94,11 +116,31 @@
                         <li><a id="change-port-label-name" href="#">Port Name</a></li>
                       </ul>
                     </div>
+
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Host label
+                        <span class="caret"></span>
+                      </button>
+                      <ul class="dropdown-menu">
+                        <li><a id="change-host-label-id" href="#">Host ID</a></li>
+                        <li><a id="change-host-label-ip" href="#">Host IP</a></li>
+                        <li><a id="change-host-label-mac" href="#">Host MAC</a></li>
+                        <li><a id="change-host-label-customize" href="#">Customized Name</a></li>
+                      </ul>
+                    </div>
                   </div>
 
                 </div>
 
-  	          <div id="graph"></div>
+                <!-- <svg> -->
+                <!-- <defs> -->
+                <!-- <pattern id="mellanox" patternUnits="userSpaceOnUse" width="100" height="100"> -->
+                <!-- <image xlink:href="/static/assets/images/mellanox.jpg" x="0" y="0" width="100" height="100" /> -->
+                <!-- </pattern> -->
+                <!-- </defs> -->
+                <!-- </svg> -->
+              <div id="graph"></div>
               <div id="main"></div>
               <div id="modals"></div>
 
@@ -108,11 +150,11 @@
       </div> <!-- /#page-content-wrapper -->
     </div> <!-- /#wrapper -->
 
-    <nav>
+    <nav class="narrow">
        <span id="node-details"></span>
     </nav>
 
-    <!-- Modal --> 
+    <!-- Modal -->
     <div class="modal fade" id="L2RouteCalculationModal" tabindex="-1" role="dialog" aria-labelledby="generic-modal-title">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -123,6 +165,17 @@
           <div class="modal-body" id="modal-msg">
             <form id ="routeCalculationForm" action="#" method="POST" class="form-horizontal">
               <div class="form-group">
+                <div class="col-sm-12">
+                  Try to find the path FROM a GATEWAY port?
+                  <input id="enable-l2source-gateway" name="enable-l2source-gateway" type="checkbox" data-toggle="toggle">
+                </div>
+                <div class="col-sm-4">
+                  <select id="l2source-gateway" name="source-gateway" disabled class="form-control">
+                    <option>Choose a gateway</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
                 <label for="source" class="col-sm-2 control-label">Source:</label>
                 <div class="col-sm-10">
                 <select id="l2source" name="source" class="form-control">
@@ -130,19 +183,50 @@
                 </select>
                 </div>
               </div>
+              <div id="l2source-input" style="display:none;" class="form-group">
+                <label for="Address" class="col-sm-2 control-label">Address</label>
+                <div class="col-sm-9">
+                  <input id="l2source-address" name="l2source-address" class="form-control" placeholder="Specify the MAC address for source">
+                </div>
+                <label for="VLAN Id" class="col-sm-2 control-label">VLAN Id</label>
+                <div class="col-sm-9">
+                  <input id="l2source-vlan" name="l2source-vlan" class="form-control" placeholder="Specify the VLAN id for source">
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-12">
+                  Try to find the path TO a GATEWAY port?
+                  <input id="enable-l2destination-gateway" name="enable-l2destination-gateway" type="checkbox" data-toggle="toggle">
+                </div>
+                <div class="col-sm-4">
+                  <select id="l2destination-gateway" name="destination-gateway" disabled class="form-control">
+                    <option value="" disabled selected style="display:none;">Choose a gateway</option>
+                  </select>
+                </div>
+              </div>
               <div class="form-group">
                 <label for="destination" class="col-sm-2 control-label">Destination:</label>
-                <div class="col-sm-10">
+                <div class="col-sm-4">
                 <select id="l2destination" name="destination" class="form-control">
                   <option>Choose a destination host</option>
                 </select>
                 </div>
               </div>
+              <div id="l2destination-input" style="display:none;" class="form-group">
+                <label for="Address" class="col-sm-2 control-label">Address</label>
+                <div class="col-sm-9">
+                  <input id="l2destination-address" name="l2destination-address" class="form-control" placeholder="Specify the MAC address for destination">
+                </div>
+                <label for="VLAN Id" class="col-sm-2 control-label">VLAN Id</label>
+                <div class="col-sm-9">
+                  <input id="l2destination-vlan" name="l2destination-address" class="form-control" placeholder="Specify the VLAN id for destination">
+                </div>
+              </div>
+            </form>
           </div>
           <div class="modal-footer">
-              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-              <input type="button" id="L2RouteCalculationFormSubmit" class="btn btn-danger" value="Display routes">
-            </form> 
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <input type="button" id="L2RouteCalculationFormSubmit" class="btn btn-danger" value="Display routes">
           </div>
         </div>
       </div>
@@ -156,20 +240,107 @@
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             <h4 class="modal-title" id="generic-modal-title">Display routes between two nodes</h4>
           </div>
-    
+
           <div class="modal-body" id="modal-msg">
             <form id ="routeCalculationForm" action="#" method="POST" class="form-horizontal">
-    
+              <div class="form-group">
+                <div class="col-sm-12">
+                  Try to find the path FROM a GATEWAY port?
+                  <input id="enable-l3source-gateway" name="enable-l3source-gateway" type="checkbox" data-toggle="toggle">
+                </div>
+                <div class="col-sm-4">
+                  <select id="l3source-gateway" name="source-gateway" disabled class="form-control">
+                    <option>Choose a gateway</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="col-sm-3">
+                  <select id="l3source-type" name="source-type" class="form-control">
+                    <option value="address">Address</option>
+                    <option value="vlan">VLAN ID</option>
+                  </select>
+                </div>
+                <div class="col-sm-9">
+
+                  <select id="l3source" name="source" class="form-control">
+                    <option>Choose a source host</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="l3source-input" style="display:none;" class="form-group">
+                <label for="l3source-address" class="col-sm-2 control-label">Address:</label>
+                <div class="col-sm-10">
+                  <input id="l3source-address" name="l3source-address" class="form-control" placeholder="Specify the IPv4 address for source">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="col-sm-12">
+                  Try to find the path TO a GATEWAY port?
+                  <input id="enable-l3destination-gateway" name="enable-l3destination-gateway" type="checkbox" data-toggle="toggle">
+                </div>
+                <div class="col-sm-4">
+                  <select id="l3destination-gateway" name="destination-gateway" disabled class="form-control">
+                    <option value="" disabled selected style="display:none;">Choose a gateway</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="col-sm-3">
+                  <select id="l3destination-type" name="destination-type" class="form-control">
+                    <option value="address">Address</option>
+                    <option value="vlan">VLAN ID</option>
+                  </select>
+                </div>
+                <div class="col-sm-9">
+                  <select id="l3destination" name="destination" class="form-control">
+                    <option>Choose a destination host</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="l3destination-input" style="display:none;" class="form-group">
+                <label for="l3destination-address" class="col-sm-2 control-label">Address:</label>
+                <div class="col-sm-10">
+                  <input id="l3destination-address" name="l3destination-address" class="form-control" placeholder="Specify the IPv4 address for destination">
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <input type="button" id="L3RouteCalculationFormSubmit" class="btn btn-danger" value="Display routes">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="ALTORouteCalculationModal" tabindex="-1" role="dialog" aria-labelledby="generic-modal-title">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="generic-modal-title">ALTO Route Calculation</h4>
+          </div>
+
+          <div class="modal-body" id="modal-msg">
+            <form id ="setupPathForm" action="#" method="POST" class="form-horizontal">
+
               <div class="form-group">
                 <label for="source" class="col-sm-2 control-label">Source:</label>
                 <div class="col-sm-10">
-    
+
                 <select id="l3source" name="source" class="form-control">
                   <option>Choose a source host</option>
                 </select>
                 </div>
               </div>
-    
+
               <div class="form-group">
                 <label for="destination" class="col-sm-2 control-label">Destination:</label>
                 <div class="col-sm-10">
@@ -178,11 +349,215 @@
                 </select>
                 </div>
               </div>
+
+              <div class="form-group">
+                <label for="obj-metrics" class="col-sm-2 control-label">Objective:</label>
+                <div class="col-sm-10">
+                <select id="obj-metrics" name="obj-metrics" class="form-control">
+                  <option value="hopcount">HopCount</option>
+                  <option value="bandwidth">BandWidth</option>
+                </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="hopcount-constraint" class="col-sm-2 control-label">HopCount:</label>
+                <div class="col-sm-5">
+                <input type="text" id="min-hopcount" name="min-hopcount" class="form-control" placeholder="Min HopCount">
+                </div>
+                <div class="col-sm-5">
+                <input type="text" id="max-hopcount" name="max-hopcount" class="form-control" placeholder="Max HopCount">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="bandwidth-constraint" class="col-sm-2 control-label">BandWidth:</label>
+                <div class="col-sm-5">
+                <input type="text" id="min-bandwidth" name="min-bandwidth" class="form-control" placeholder="Min BandWidth">
+                </div>
+                <div class="col-sm-5">
+                <input type="text" id="max-bandwidth" name="max-bandwidth" class="form-control" placeholder="Max BandWidth">
+                </div>
+              </div>
+
+              <hr />
+
+              <!-- Integrate with rate limitation -->
+              <div class="form-group">
+                <label for="enable-rate-limit" class="col-sm-2 control-label">Enable:</label>
+                <div class="col-sm-10">
+                  <label class="checkbox-inline">
+                    <input type="checkbox" id="enable-rate-limit" value="enable">Rate Limitation
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="rate-limit" class="col-sm-2 control-label">BandWidth:</label>
+                <div class="col-sm-8">
+                <input type="number" id="rate-limit" name="rate-limit" class="form-control" min="0" max="100000000" value="1000000">
+                </div>
+                <label for="rate-limit" class="col-sm-2 control-label">kbps</label>
+              </div>
+
+              <div class="form-group">
+                <label for="burst-size" class="col-sm-2 control-label">BurstSize:</label>
+                <div class="col-sm-8">
+                <input type="number" id="burst-size" name="burst-size" class="form-control" min="0" max="100000000" value="1000000">
+                </div>
+                <label for="burst-size" class="col-sm-2 control-label">kbps</label>
+              </div>
           </div>
           <div class="modal-footer">
               <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-              <input type="button" id="L3RouteCalculationFormSubmit" class="btn btn-danger" value="Display routes">
-            </form> 
+              <input type="button" id="SPCESetupPathFormSubmit" class="btn btn-danger" value="Setup path">
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="ALTORouteRemoveModal" tabindex="-1" role="dialog" aria-labelledby="generic-modal-title">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="generic-modal-title">Are you sure about that?</h4>
+          </div>
+          <form id="ALTORemoveRouteForm" action="" method="POST">
+          <div class="modal-body" id="modal-msg">This action is destructive. Are you sure that you want remove the route <div id="route" data-route=""></div>?
+          </div>
+
+          <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+              <input type="button" id="ALTORemoveRouteFormSubmit" class="btn btn-danger" value="Yes, I would like to confirm">
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="SPCERateControllerModal" tabindex="-1" role="dialog" aria-labelledby="generic-modal-title">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="generic-modal-title">ALTO Rate Limit Controller</h4>
+          </div>
+
+          <div class="modal-body" id="modal-msg">
+            <form id ="ALTORateControllerForm" action="#" method="POST" class="form-horizontal">
+
+              <div class="form-group">
+                <label for="source" class="col-sm-2 control-label">Source:</label>
+                <div class="col-sm-10">
+                <h5 id="l3source" name="source" class="text-left"></h5>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="destination" class="col-sm-2 control-label">Destination:</label>
+                <div class="col-sm-10">
+                <h5 id="l3destination" name="destination" class="text-left"></h5>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="rate-limit" class="col-sm-2 control-label">BandWidth:</label>
+                <div class="col-sm-10">
+                <input type="text" id="rate-limit" name="rate-limit" class="form-control" placeholder="Maximum BandWidth Limit (Default 1000000)">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="burst-size" class="col-sm-2 control-label">BurstSize:</label>
+                <div class="col-sm-10">
+                <input type="text" id="burst-size" name="burst-size" class="form-control" placeholder="Default Burst Size is the same as BandWidth">
+                </div>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+              <input type="button" id="SPCERateLimitingFormSubmit" class="btn btn-danger" value="Limit rate">
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="ALTORateRemoveModal" tabindex="-1" role="dialog" aria-labelledby="generic-modal-title">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="generic-modal-title">Are you sure about that?</h4>
+          </div>
+          <form id="ALTORemoveRateForm" action="" method="POST">
+          <div class="modal-body" id="modal-msg">This action is destructive. Are you sure that you want remove the route <div id="route" data-route=""></div>?
+          </div>
+
+          <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+              <input type="button" id="ALTORemoveRateFormSubmit" class="btn btn-danger" value="Yes, I would like to confirm">
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="ALTOTaskSubmissionModal" tabindex="-1" role="dialog" aria-labelledby="generic-modal-title">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="generic-modal-title">ALTO Task Submission</h4>
+          </div>
+
+          <div class="modal-body" id="modal-msg">
+            <form id ="taskSubmissionForm" action="#" method="POST" class="form-horizontal">
+
+              <div class="form-group">
+                <label for="source" class="col-sm-2 control-label">Source:</label>
+                <div class="col-sm-10">
+
+                <select id="l3source" name="source" class="form-control">
+                  <option>Choose a source host</option>
+                </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="destination" class="col-sm-2 control-label">Destination:</label>
+                <div class="col-sm-10">
+                <select id="l3destination" name="destination" class="form-control">
+                  <option>Choose a destination host</option>
+                </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="source_file" class="col-sm-2 control-label">Source File:</label>
+                <div class="col-sm-10">
+                <input type="text" id="source_file" name="source_file" class="form-control" placeholder="Source File URL">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="destination_dir" class="col-sm-2 control-label">Destination Directory:</label>
+                <div class="col-sm-10">
+                <input type="text" id="destination_dir" name="destination_dir" class="form-control" placeholder="Destination Directory URL">
+                </div>
+              </div>
+
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+              <input type="button" id="ALTOTaskSubmissionFormSubmit" class="btn btn-danger" value="Submit Task">
+            </form>
           </div>
         </div>
       </div>
@@ -196,14 +571,36 @@
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             <h4 class="modal-title" id="generic-modal-title">Are you sure about that?</h4>
           </div>
-          <div class="modal-body" id="modal-msg">Do you wanna install flows on this path ?
+          <div class="modal-body" id="modal-msg">
+            Do you wanna install flows on this path ?
+            <form id="pathMatchForm" action="#" method="POST" class="form-horizontal">
+              <div class="form-group">
+                <label for="source" class="col-sm-2 control-label">Source:</label>
+                <div class="col-sm-10">
+                  <input id="l2l3source" name="source" class="form-control" placeholder="Specify the ip/mac address for source">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="destination" class="col-sm-2 control-label">Destination:</label>
+                <div class="col-sm-10">
+                  <input id="l2l3destination" name="destination" class="form-control" placeholder="Specify the ip/mac address for destination">
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-10">
+                  <label class="checkbox-inline">
+                    <input type="checkbox" id="default-match">I don't know. Specify as ANY.
+                  </label>
+                </div>
+              </div>
+            </form>
           </div>
           <div class="modal-footer">
             <form id="PathFlowsInstallForm" action="" method="POST">
               <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-              <input type="submit" class="btn btn-danger" value="Yes, I would like to confirm">
+              <input id="PathFlowsConfirmationSubmit" type="submit" class="btn btn-danger" value="Yes, I would like to confirm">
               <input id="type" type="hidden" value="">
-            </form> 
+            </form>
           </div>
         </div>
       </div>
@@ -219,22 +616,22 @@
           </div>
           <form id="RemoveFlowForm" action="" method="POST">
           <div class="modal-body" id="modal-msg">This action is destructive. Are you sure that you want remove the flow <span id="flowid"></span>?
-    
+
               <div class="form-group">
-    
+
                 <div class="checkbox">
                   <label>
                     <input id="delete_all" name="delete_all" type="checkbox"> Also, remove all flows in all nodes with name: <span id="flowname"></span>
                   </label>
                 </div>
               </div>
-    
+
           </div>
-    
+
           <div class="modal-footer">
               <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-              <input type="submit" class="btn btn-danger" value="Yes, I would like to confirm">
-            </form> 
+              <input id="FlowRemoveSubmit" type="submit" class="btn btn-danger" value="Yes, I would like to confirm">
+            </form>
           </div>
         </div>
       </div>
@@ -253,8 +650,8 @@
           <div class="modal-footer">
             <form id="FlowLowPriorityRemoveForm" action="" method="POST">
               <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-              <input type="submit" class="btn btn-danger" value="Yes, I would like to confirm">
-            </form> 
+              <input id="FlowLowPriorityRemoveSubmit" type="submit" class="btn btn-danger" value="Yes, I would like to confirm">
+            </form>
           </div>
         </div>
       </div>
@@ -336,14 +733,14 @@ information: <br><br>
             <div class="col-sm-8">
             <select id="output" name="output" class="form-control">
             </select>
-            <small><i>For now, only output to a interface is allowed.</i></small>
+            <!-- <small><i>For now, only output to a interface is allowed.</i></small> -->
             </div>
           </div>
       </div>
 
       <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-          <input type="submit" class="btn btn-danger" value="Yes, I would like to add this flow">
+          <input id="FlowAddSubmit" type="submit" class="btn btn-danger" value="Yes, I would like to add this flow">
         </form>
       </div>
 
@@ -352,22 +749,79 @@ information: <br><br>
 </div>
 
     <script language="javascript">
-      $(document).ready(function() {
+     $(document).ready(function() {
 
-        $.ajax({
-          type: "GET",
-          url: "/api/topology",
-          success: function (topology) {
-                    // Load main chart
-                    chart = new D3Force(topology['nodes'],
-                                        topology['links'],
-                                        "#graph");
-                    chart.load_layout();
+       $.ajax({
+         type: "GET",
+         url: "/api/topology",
+         headers: {
+           "Authorization": "Basic " + (Cookies.get('auth') || "")
+         },
+         statusCode: {
+           401: function() {
+             window.location.href = "/login.html";
+           },
+           404: function() {
+             chart = new D3Force(test_tt['nodes'],
+                                 test_tt['links'],
+                                 "#graph");
+             chart.load_layout();
+           }
+         },
+         success: function (topology) {
+           // Load main chart
+           chart = new D3Force(topology['nodes'],
+                               topology['links'],
+                               "#graph");
+           chart.load_layout();
 
-                   },
-          dataType: "json"
-        });
-      });
+         },
+         dataType: "json"
+       });
+
+       var show_traffic = function() {
+         $.ajax({
+           type: "GET",
+           contentType: "application/json; charset=utf-8",
+           url: "api/stats/all",
+           headers: {
+             "Authorization": "Basic " + (Cookies.get('auth') || "")
+           },
+           statusCode: {
+             401: function() {
+               window.location.href = "/login.html";
+             }
+           },
+           success: function (data) {
+             var stats = {};
+
+             Object.keys(data).forEach(function(connector) {
+               var source = connector.replace(/:/g, '\\\:').replace(/\./g, '\\\.');
+               stat = (Math.log2(data[connector])+3)/10;
+               if (stat > 3) {
+                 stat = 3;
+               }
+               stats[source] = 0.5 + 0.5 * stat/3;
+             });
+
+             d3.selectAll(".link-link, .host-link")
+               .style("opacity", "0.5")
+               .style("cursor", null)
+               .classed('active-link', false);
+
+             Object.keys(stats).forEach(function (source) {
+               d3.selectAll('.link-' + source)
+                 .style("opacity", stats[source])
+                 .classed('active-link', true);
+             });
+           },
+           dataType: "json"
+         });
+       }
+
+       show_traffic();
+       setInterval(show_traffic, 10000);
+     });
     </script>
 
     <script src="/static/assets/js/events.js"></script>

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Task Scheduler</title>
+    <link href="../src/dragit.css" rel="stylesheet" />
+    <script src="../lib/d3.v3.js"></script>
+    <script src="../src/dragit.js"></script>
+</head>
+<title>Task Scheduler</title>
+<style>
+    body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        margin-left: 40px;
+        font-weight: 200;
+        font-size: 14px;
+    }
+
+    html,
+    body {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    text {
+        cursor: default;
+    }
+
+    h1 {
+        font-weight: 400;
+    }
+
+    #chart {
+        height: 506px;
+    }
+
+    text {
+        font-size: 10px;
+    }
+
+    .dot {
+        stroke: #000;
+        stroke-opacity: .1;
+        opacity: 0.9;
+    }
+
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+
+    .label {
+        fill: #777;
+    }
+
+    .time.label {
+        font: 500 196px "Helvetica Neue";
+        fill: #ddd;
+    }
+
+    .task.label {
+        font: 500 96px "Helvetica Neue";
+        fill: #ddd;
+    }
+
+    .time.label.active {
+        fill: #aaa;
+    }
+
+    circle.pointTrajectory {
+        pointer-events: none;
+        stroke: lightgray;
+        fill: black;
+        opacity: 0;
+    }
+
+    path.lineTrajectory {
+        stroke-width: 2;
+        stroke-opacity: .5;
+        stroke: black;
+        fill: none;
+        pointer-events: none;
+    }
+
+    .selected {
+        stroke-width: 4;
+    }
+</style>
+
+<h1>A Task Scheduler on the Path</h1>
+
+<i></i></p>
+
+<div id="chart" style="margin:0px"></div>
+<span id="min-time"></span>
+<input type="range" name="points" min="0" max="200" step="1" value="0" id="slider-time" style="width:800px">
+<span id="max-time"></span>
+<br>
+<p></p>
+
+<!-- Place this tag in your head or just before your close body tag. -->
+<script type="text/javascript" src="https://apis.google.com/js/platform.js"></script>
+
+<br>
+
+<script>
+    d3.json("../data/tasks.json", function(tasks) {
+        // Chart dimensions.
+        var margin = {
+                top: 19.5,
+                right: 19.5,
+                bottom: 19.5,
+                left: 39.5
+            },
+            width = 960 - margin.right,
+            height = 500 - margin.top - margin.bottom;
+
+
+
+        var tasksName = [];
+        tasks.forEach(function(i) {
+            tasksName.push(i.name);
+        });
+        var taskLeft = [];
+        tasks.forEach(function(i) {
+            taskLeft.push(i.taskleft);
+        });
+        var timeStart = [];
+        tasks.forEach(function(i) {
+            timeStart.push(i.bandwidth[0][0]);
+        });
+        var earliest;
+        timeStart.forEach(function(i) {
+            earliest = timeStart[0];
+            for (i = 0; i < timeStart.length; i++) {
+                earliest = (earliest > timeStart[i] ? earliest = timeStart[i] : earliest);
+            }
+        });
+        var timeEnd = [];
+        tasks.forEach(function(i) {
+            timeEnd.push(i.bandwidth[i.bandwidth.length - 1][0]);
+        });
+        var latest;
+        timeEnd.forEach(function(i) {
+            latest = timeEnd[0];
+            for (i = 0; i < timeEnd.length; i++) {
+                latest = (latest < timeEnd[i] ? latest = timeStart[i] : latest);
+            }
+        });
+
+        function radius(d) {
+            return d.taskleft;
+        }
+
+        function x(d) {
+            // return d.id;
+            return d.now;
+        }
+
+        function y(d) {
+            return d.bandwidth;
+        }
+
+        function color(d) {
+            return d.id;
+        }
+
+        function key(d) {
+            return d.name;s
+        }
+        //var xScale = d3.scale.linear().domain([0,tasks.length+1]).range([0,width]);
+        var rightBoundry = width - 150;
+        var xScale = d3.scale.linear().domain([earliest, latest]).range([0, rightBoundry]);
+        var yScale = d3.scale.log().domain([1, 2e12]).range([height, 0]);
+        var radiusScale = d3.scale.log().domain([1, 2e12]).range([0, 150]);
+        var colorScale = d3.scale.category10();
+
+        // var xAxis = d3.svg.axis().orient("bottom").scale(xScale).ticks(12, d3.format(",d"));
+        var xAxis = d3.svg.axis().orient("bottom").scale(xScale);
+        var yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+        var svg = d3.select("#chart").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+            .attr("class", "gRoot");
+
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis);
+
+        // Add the y-axis.
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis);
+
+        // Add an x-axis label.
+        svg.append("text")
+            .attr("class", "x label")
+            .attr("text-anchor", "end")
+            .attr("x", rightBoundry)
+            .attr("y", height - 6)
+            .text("tasks on the path");
+
+        // Add a y-axis label.
+        svg.append("text")
+            .attr("class", "y label")
+            .attr("text-anchor", "end")
+            .attr("y", 6)
+            .attr("dy", ".75em")
+            .attr("transform", "rotate(-90)")
+            .text("bandwidth of each task");
+
+        // function radius(d) {
+        //     return d.taskleft;
+        // }
+        //
+        // function x(d) {
+        //     return d.id;
+        // }
+        //
+        // function y(d) {
+        //     return d.bandwidth;
+        // }
+        //
+        // function color(d) {
+        //     return d.id;
+        // }
+        //
+        // function key(d) {
+        //     return d.name;
+        // }
+
+        function position(dot) {
+            dot.attr("cx", function(d) {
+                    return xScale(x(d));
+                })
+                .attr("cy", function(d) {
+                    return yScale(y(d));
+                })
+                .attr("r", function(d) {
+                    return radiusScale(radius(d));
+                });
+        }
+
+        var label = svg.append("text")
+            .attr("class", "time label")
+            .attr("text-anchor", "end")
+            .attr("y", height - 24)
+            .attr("x", rightBoundry)
+            .text(latest);
+        var tasklabel = svg.append("text")
+            .attr("class", "task label")
+            .attr("text-anchor", "start")
+            .attr("y", 80)
+            .attr("x", 20)
+            .text(" ");
+        var first_time = true;
+        // A bisector since many nation's data is sparsely-defined.
+        var bisect = d3.bisector(function(d) {
+            return d[0];
+        });
+        // Add a dot per nation. Initialize the data at 1800, and set the colors.
+        var dot = svg.append("g")
+            .attr("class", "dots")
+            .selectAll(".dot")
+            .data(interpolateData(latest))
+            .enter().append("circle")
+            .attr("class", "dot")
+            .style("fill", function(d) {
+                return colorScale(color(d));
+            })
+            .call(position)
+            .on("mousedow", function(d, i) {
+
+            })
+            .on("mouseup", function(d, i) {
+                dot.classed("selected", false);
+                d3.select(this).classed("selected", !d3.select(this).classed("selected"));
+                dragit.trajectory.display(d, i, "selected");
+                //TODO: test if has been dragged
+                // Look at the state machine history and find a drag event in it?
+            })
+            .on("mouseenter", function(d, i) {
+                //clear_demo();
+                if (dragit.statemachine.current_state == "idle") {
+                    //d3.selectAll('.dot').filter(function(){return d3.select(this).text()!="FileA"}).style('visibility', 'hidden');
+                    dragit.trajectory.display(d, i);
+                    dragit.utils.animateTrajectory(dragit.trajectory.display(d, i), dragit.time.current, 1000);
+                    tasklabel.text(d.name);
+                    dot.style("opacity", .4);
+                    d3.select(this).style("opacity", 1);
+                    d3.selectAll(".selected").style("opacity", 1);
+                }
+            })
+            .on("mouseleave", function(d, i) {
+
+                if (dragit.statemachine.current_state == "idle") {
+                    tasklabel.text("");
+                    dot.style("opacity", 1);
+                }
+                //d3.selectAll('.dot').style('visibility', 'visible');
+
+                dragit.trajectory.remove(d, i);
+            })
+            .call(dragit.object.activate);
+
+        // Add a title.
+        dot.append("title")
+            .text(function(d) {
+                return d.name;
+            });
+        // Start a transition that interpolates the data based on time.
+        svg.transition()
+            .duration(30000)
+            .ease("linear");
+
+        // Defines a sort order so that the smallest dots are drawn on top.
+        function order(a, b) {
+            return radius(b) - radius(a);
+        }
+        // Updates the display to show the specified time.
+        function displaytime(time) {
+            dot.data(interpolateData(time /**+ dragit.time.min**/ ), key).call(position).sort(order);
+            label.text(Math.round(time));
+        }
+
+        // Interpolates the dataset for the given (fractional) time.
+        function interpolateData(time) {
+            return tasks.map(function(d) {
+                return {
+                    id: d.id,
+                    name: d.name,
+                    now: time,
+                    taskleft: interpolateValues(d.taskleft, time),
+                    bandwidth: interpolateValues(d.bandwidth, time)
+                };
+            });
+        }
+        // Finds (and possibly interpolates) the value for the specified time.
+        function interpolateValues(values, time) {
+            var i = bisect.left(values, time, 0, values.length - 1),
+                a = values[i];
+            if (i > 0) {
+                var b = values[i - 1],
+                    t = (time - a[0]) / (b[0] - a[0]);
+                return a[1] * (1 - t) + b[1] * t;
+            }
+            return a[1];
+        }
+        init();
+
+        function update(v, duration) {
+            dragit.time.current = v || dragit.time.current;
+            displaytime(dragit.time.current);
+            d3.select("#slider-time").property("value", dragit.time.current);
+        }
+
+        function init() {
+
+            dragit.init(".gRoot");
+
+            dragit.time = {
+                min: earliest,
+                max: latest,
+                step: 1,
+                current: latest
+            };
+            d3.select("#min-time").text(earliest);
+            d3.select("#max-time").text(latest);
+            dragit.data = d3.range(tasks.length).map(function() {
+                return Array();
+            });
+
+            for (var yy = earliest; yy < latest + 1; yy++) {
+
+                interpolateData(yy).filter(function(d, i) {
+                    dragit.data[i][yy - dragit.time.min] = [xScale(x(d)), yScale(y(d))];
+
+                });
+            }
+
+            dragit.evt.register("update", update);
+
+            d3.select("#slider-time").property("min", dragit.time.min);
+            d3.select("#slider-time").property("max", dragit.time.max /* - dragit.time.min*/ );
+            d3.select("#slider-time").property("step", dragit.time.step);
+            d3.select("#slider-time").property("value", dragit.time.current);
+
+            d3.select("#slider-time")
+                .on("mousemove", function() {
+                    update(parseInt(this.value), 500);
+                    //clear_demo();
+                });
+
+            var end_effect = function() {
+                tasklabel.text("");
+                dot.style("opacity", 0.9);
+            };
+
+            dragit.evt.register("dragend", end_effect);
+        }
+
+        // function clear_demo() {
+        //     if (first_time) {
+        //         svg.transition().duration(0);
+        //         first_time = false;
+        //         window.clearInterval(demo_interval);
+        //         tasklabel.text("");
+        //         dragit.trajectory.removeAll();
+        //         d3.selectAll(".dot").style("opacity", 1);
+        //     }
+        // }
+        //
+        // function play_demo() {
+        //
+        //     var ex_tasks = ["FileA", "FileB", "FileC"];
+        //     var index_random_task = null;
+        //     var random_index = Math.floor(Math.random() * ex_tasks.length);
+        //     var index_task = tasks.filter(function(d, i) {
+        //         if (d.name == ex_tasks[random_index]) {
+        //             index_random_task = i;
+        //             return true;
+        //         }
+        //     })[0];
+        //
+        //     var index_task = tasks[index_random_task];
+        //
+        //     dragit.trajectory.removeAll();
+        //     dragit.trajectory.display(index_task, index_random_task);
+        //     tasklabel.text(index_task.name);
+        //
+        //     dragit.utils.animateTrajectory(dragit.lineTrajectory, dragit.time.min, 2000);
+        //
+        //     d3.selectAll(".dot").style("opacity", .4);
+        //
+        //     d3.selectAll(".dot").filter(function(d) {
+        //         return d.name == index_task.name;
+        //     }).style("opacity", 1);
+        // }
+        //
+        // var demo_interval = null;
+        //
+        // setTimeout(function() {
+        //     if (first_time) {
+        //         //play_demo();
+        //         //demo_interval = setInterval(play_demo, 3000);
+        //     }
+        // }, 1000);
+    });
+</script>
+
+<script>
+    (function(i, s, o, g, r, a, m) {
+        i['GoogleAnalyticsObject'] = r;
+        i[r] = i[r] || function() {
+            (i[r].q = i[r].q || []).push(arguments)
+        }, i[r].l = 1 * new Date();
+        a = s.createElement(o),
+            m = s.getElementsByTagName(o)[0];
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-57485706-1', 'auto');
+    ga('send', 'pageview');
+</script>
+</body>
+
+</html>

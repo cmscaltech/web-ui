@@ -6,17 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
-		<meta http-equiv="refresh" content="15" >
-  
     <title>OpenFlow Next Generation Project - Web GUI</title>
-  
+
     <!-- CSS -->
     <link type="text/css" href="/static/assets/css/font-awesome.min.css" rel="stylesheet">
     <link type="text/css" href="/static/assets/css/bootstrap.min.css" rel="stylesheet">
 
     <link type="text/css" href="/static/assets/css/main.css" rel="stylesheet">
     <link type="text/css" href="/static/assets/css/chart.css" rel="stylesheet">
-  
+
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -31,9 +29,10 @@
     <script src="/static/assets/js/d3.min.js"></script>
     <script src="/static/assets/js/bootstrap.min.js"></script>
     <script src="/static/assets/js/handlebars.min-latest.js"></script>
+    <script src="/static/assets/js/js.cookie.js"></script>
 
     <script src="/static/assets/js/main.js"></script>
-  
+
     <div id="wrapper">
 
     <!-- Page Content -->
@@ -74,132 +73,153 @@ id="avg">0.0</span> Gbps, Min: <span id="min">0.0</span> Gbps</span></h1>
     </div> <!-- /#wrapper -->
 
     <script language="javascript">
+     /* Seconds for refreshing traffic stats*/
+     var REFRESH_FREQ = 5;
 
-      var data = [];
-     
-      var node = getParameterByName("node");
-      var table = getParameterByName("table");
-      var clean_id = getParameterByName("clean_id");
+     var plot_flow_traffic = function() {
+       var data = [];
 
-      // load the external data
-      d3.json("/api/stats/flow/" + node + "/" + table + "/" + clean_id, function(error, json) {
-        var json = json;
-        console.log(json);
+       var node = getParameterByName("node");
+       var table = getParameterByName("table");
+       var clean_id = getParameterByName("clean_id");
 
-        for (i = 0; i < json['main'].length; i++) {
-          main_bytes = (json['main'][i]['bytes'] / 1024 / 1024 / 1024) * 8;
-          main_packets = json['main'][i]['packets'];
-          time = d3.time.format("%Y-%m-%d %H:%M:%S").parse(json['main'][i]['date']);
-          if (json['oposite'][i] != undefined) {
-            oposite_bytes = json['oposite'][i]['bytes'];
-          } else {
-            oposite_bytes = 0;
-          }
-          data.push({'date': time,
-                     'main_bytes': main_bytes,
-                     'oposite_bytes': (oposite_bytes / 1024 / 1024 / 1024) * 8});
-        }
-      
-      var margin = {top: 20, right: 20, bottom: 30, left: 50},
-          width = $("#plot-flow-d3").parent().width() - margin.left - margin.right,
-          height = 600 - margin.top - margin.bottom;
-      
-      
-      var x = d3.time.scale()
-          .range([0, width]);
-      
-      var y = d3.scale.linear()
-          .range([height, 0]);
-      
-      var xAxis = d3.svg.axis()
-          .scale(x)
-          .orient("bottom")
-          .innerTickSize(-height)
-          .outerTickSize(0)
-          .tickPadding(5);
-      
-      var yAxis = d3.svg.axis()
-          .scale(y)
-          .orient("left")
-          .innerTickSize(-width)
-          .outerTickSize(0)
-          .tickPadding(5);
-      
-      var interp = "monotone";
-      
-      var area = d3.svg.area()
-          .x(function(d) { return x(d.date); })
-          .y0(height)
-          .y1(function(d) { return y(d.main_bytes + d.oposite_bytes); })
-          .interpolate(interp);
-      
-      // Define the lines
-      var bytesline = d3.svg.line()
-          .x(function(d) { return x(d.date); })
-          .y(function(d) { return y(d.main_bytes); })
-          .interpolate(interp);
-      
-      var bytesline2 = d3.svg.line()
-          .x(function(d) { return x(d.date); })
-          .y(function(d) { return y(d.oposite_bytes); })
-          .interpolate(interp);
-      
-      var svg = d3.select("#plot-flow-d3").append("svg")
-          .attr("width", width + margin.left + margin.right)
-          .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-     
-        console.log(data);
- 
-        var maximum = d3.max(data, function(d) { return d.main_bytes; });
-        var average = d3.mean(data, function(d) { return d.main_bytes; });
-        var minimum = d3.min(data, function(d) { return d.main_bytes; });
-      
-        $("#max").html(maximum.toFixed(2));
-        $("#avg").html(average.toFixed(2));
-        $("#min").html(minimum.toFixed(2));
-      
-        x.domain(d3.extent(data, function(d) { return d.date; }));
-        y.domain([0, d3.max(data, function(d) { return d.main_bytes + d.oposite_bytes; })]);
-      
-      
-        svg.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0," + height + ")")
-            .style("fill", "white")
-            .call(xAxis);
-      
-        svg.append("g")
-            .attr("class", "y axis")
-            .call(yAxis)
-            .style("fill", "white")
-          .append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", -30)
-            .attr("dy", "0em")
-            .style("text-anchor", "middle")
-            .text("Gbps");
-      
-      d3.selectAll(".tick > text")
-        .style("font-size", "14px");
-      
-        svg.append("path")
-            .datum(data)
-            .attr("class", "area")
-            .attr("d", area);
-      
-      
-        // Add the bytesline path.
-        svg.append("path")
-            .attr("class", "line")
-            .attr("d", bytesline(data));
-      
-        // Add the bytesline path.
-        svg.append("path")
-            .attr("class", "line2")
-            .attr("d", bytesline2(data));
-});
-    </script> 
+       // load the external data
+       $.ajax({
+         type: "GET",
+         contentType: "application/json; charset=utf-8",
+         url: "/api/stats/flow/" + node + "/" + table + "/" + clean_id,
+         headers: {
+           "Authorization": "Basic " + (Cookies.get('auth') || "")
+         },
+         statusCode: {
+           401: function() {
+             window.location.href = "/login.html";
+           }
+         },
+         success: function(json) {
+           console.log(json);
+
+           for (i = 0; i < json['main'].length; i++) {
+             main_bytes = (json['main'][i]['bytes'] / 1024 / 1024 / 1024) * 8;
+             main_packets = json['main'][i]['packets'];
+             time = d3.time.format("%Y-%m-%d %H:%M:%S").parse(json['main'][i]['date']);
+             if (json['oposite'][i] != undefined) {
+               oposite_bytes = json['oposite'][i]['bytes'];
+             } else {
+               oposite_bytes = 0;
+             }
+             data.push({'date': time,
+                        'main_bytes': main_bytes,
+                        'oposite_bytes': (oposite_bytes / 1024 / 1024 / 1024) * 8});
+           }
+
+           var margin = {top: 20, right: 20, bottom: 30, left: 50},
+               width = $("#plot-flow-d3").parent().width() - margin.left - margin.right,
+               height = 600 - margin.top - margin.bottom;
+
+
+           var x = d3.time.scale()
+                     .range([0, width]);
+
+           var y = d3.scale.linear()
+                     .range([height, 0]);
+
+           var xAxis = d3.svg.axis()
+                         .scale(x)
+                         .orient("bottom")
+                         .innerTickSize(-height)
+                         .outerTickSize(0)
+                         .tickPadding(5);
+
+           var yAxis = d3.svg.axis()
+                         .scale(y)
+                         .orient("left")
+                         .innerTickSize(-width)
+                         .outerTickSize(0)
+                         .tickPadding(5);
+
+           var interp = "monotone";
+
+           var area = d3.svg.area()
+                        .x(function(d) { return x(d.date); })
+                        .y0(height)
+                        .y1(function(d) { return y(d.main_bytes + d.oposite_bytes); })
+                        .interpolate(interp);
+
+           // Define the lines
+           var bytesline = d3.svg.line()
+                             .x(function(d) { return x(d.date); })
+                             .y(function(d) { return y(d.main_bytes); })
+                             .interpolate(interp);
+
+           var bytesline2 = d3.svg.line()
+                              .x(function(d) { return x(d.date); })
+                              .y(function(d) { return y(d.oposite_bytes); })
+                              .interpolate(interp);
+
+           $("#plot-flow-d3").html('');
+
+           var svg = d3.select("#plot-flow-d3").append("svg")
+                       .attr("width", width + margin.left + margin.right)
+                       .attr("height", height + margin.top + margin.bottom)
+                       .append("g")
+                       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+           console.log(data);
+
+           var maximum = d3.max(data, function(d) { return d.main_bytes; });
+           var average = d3.mean(data, function(d) { return d.main_bytes; });
+           var minimum = d3.min(data, function(d) { return d.main_bytes; });
+
+           $("#max").html(maximum.toFixed(2));
+           $("#avg").html(average.toFixed(2));
+           $("#min").html(minimum.toFixed(2));
+
+           x.domain(d3.extent(data, function(d) { return d.date; }));
+           y.domain([0, d3.max(data, function(d) { return d.main_bytes + d.oposite_bytes; })]);
+
+
+           svg.append("g")
+              .attr("class", "x axis")
+              .attr("transform", "translate(0," + height + ")")
+              .style("fill", "white")
+              .call(xAxis);
+
+           svg.append("g")
+              .attr("class", "y axis")
+              .call(yAxis)
+              .style("fill", "white")
+              .append("text")
+              .attr("transform", "rotate(-90)")
+              .attr("y", -30)
+              .attr("dy", "0em")
+              .style("text-anchor", "middle")
+              .text("Gbps");
+
+           d3.selectAll(".tick > text")
+             .style("font-size", "14px");
+
+           svg.append("path")
+              .datum(data)
+              .attr("class", "area")
+              .attr("d", area);
+
+
+           // Add the bytesline path.
+           svg.append("path")
+              .attr("class", "line")
+              .attr("d", bytesline(data));
+
+           // Add the bytesline path.
+           svg.append("path")
+              .attr("class", "line2")
+              .attr("d", bytesline2(data));
+         },
+         dataType: "json"
+       });
+     };
+
+     setInterval(plot_flow_traffic, REFRESH_FREQ * 1000);
+    </script>
   </body>
 </html>

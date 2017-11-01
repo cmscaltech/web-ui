@@ -32,6 +32,9 @@ Edit this file and change `yourdomain.com` to your webserver domain.
 
 ```
 $ sudo pip install -r requirements.txt
+$ git clone https://github.com/snlab/python-odl.git
+$ cd python-odl
+$ sudo python setup.py install
 ```
 
 ### Edit your config file

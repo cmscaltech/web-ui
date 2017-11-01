@@ -76,16 +76,28 @@
           success: function (topology) {
             var nodes = topology['nodes'];
 
-            var switches = {}
+            var hosts = {}
             for (var k in nodes) {
-              if (nodes[k].type == "switch" || nodes[k].type == "ovs") {
-                switches[k] = nodes[k];
+              if (nodes[k].type == "host") {
+                var address = nodes[k]['host-tracker-service:addresses'][0]
+                var attachment_point = nodes[k]['host-tracker-service:attachment-points'][0]
+                var attachment_split = attachment_point['tp-id'].split(':')
+                var attachment_port = attachment_split.pop()
+                var attachment_switch = attachment_split.join(':')
+                hosts[k] = {
+                  'id': address.id,
+                  'ip': address.ip,
+                  'mac': address.mac,
+                  'active': attachment_point.active,
+                  'attachment_port': attachment_port,
+                  'attachment_switch': attachment_switch,
+                };
               }
             }
-            getTemplateAjax('interfaces.handlebars', function(template) {
-              var context = {'switch': switches};
+            getTemplateAjax('hosts.handlebars', function(template) {
+              var context = {'host': hosts};
               $('#main').html(template(context));
-              $('#switchesTable').DataTable({
+              $('#hostsTable').DataTable({
                 'pageLength': 100
               });
               $('#waiting-dialog').modal('hide');

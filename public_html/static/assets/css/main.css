@@ -47,19 +47,22 @@ a.nav-expander.fixed {
 nav {
   background: #2d2f33;
   display: none;
-  height: 360px;
+  max-height: 300px;
   overflow: auto;
   position: fixed;
   font-size: 12px;
-  top: 70%;
-  width: 100%;
-  z-index: 2000;
-  transition: right 0.3s ease-in-out 0s;
-  -webkit-transition: right 0.3s ease-in-out 0s;
-  -moz-transition: right 0.3s ease-in-out 0s;
-  -o-transition: right 0.3s ease-in-out 0s;
-
+  bottom: 0;
+  left: 0;
+  transition: left 0.5s ease 0s, right 0.3s ease-in-out 0s;
+  -webkit-transition: left 0.5s ease 0s, right 0.3s ease-in-out 0s;
+  -moz-transition: left 0.5s ease 0s, right 0.3s ease-in-out 0s;
+  -o-transition: left 0.5s ease 0s, right 0.3s ease-in-out 0s;
 }
+
+nav.narrow {
+  left: 250px;
+}
+
 .nav-expanded nav {
   right: 0;
 }
@@ -176,6 +179,7 @@ body.nav-expanded {
 
 body {
   background-color: rgba(0,0,0,1);
+  color: white;
 }
 
 nav {
@@ -197,6 +201,10 @@ nav h3 {
 
 .table > tbody > tr.active > td, .table > tbody > tr.active > th, .table > tbody > tr > td.active, .table > tbody > tr > th.active, .table > tfoot > tr.active > td, .table > tfoot > tr.active > th, .table > tfoot > tr > td.active, .table > tfoot > tr > th.active, .table > thead > tr.active > td, .table > thead > tr.active > th, .table > thead > tr > td.active, .table > thead > tr > th.active {
     background-color: #555;
+}
+
+.table-hover > tbody > tr:hover {
+  background-color: #666;
 }
 
 .eth {
@@ -230,6 +238,10 @@ a:focus, a:hover {
 a {
     color: #999;
     text-decoration: none;
+}
+
+.modal {
+  color: black;
 }
 
 #plot-flow-d3.fullscreen{

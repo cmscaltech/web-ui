@@ -6,16 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
-  
+
     <title>OpenFlow Next Generation Project - Web GUI</title>
-  
+
     <!-- CSS -->
     <link type="text/css" href="/static/assets/css/font-awesome.min.css" rel="stylesheet">
     <link type="text/css" href="/static/assets/css/bootstrap.min.css" rel="stylesheet">
 
     <link type="text/css" href="/static/assets/css/main.css" rel="stylesheet">
     <link type="text/css" href="/static/assets/css/jquery.dataTables.min.css" rel="stylesheet">
-  
+
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -30,47 +30,95 @@
     <script src="/static/assets/js/jquery.dataTables.min.js"></script>
     <script src="/static/assets/js/bootstrap.min.js"></script>
     <script src="/static/assets/js/handlebars.min-latest.js"></script>
+    <script src="/static/assets/js/js.cookie.js"></script>
 
     <script src="/static/assets/js/main.js"></script>
-  
+
     <div id="wrapper">
       <!-- Page Content -->
       <div id="page-content-wrapper">
         <div class="container-fluid">
           <div class="row">
-              <div id="main"></div>
+            <div class="col-md-12 right">
+              <label class="checkbox-inline">
+                <input type="checkbox" checked="checked" id="to-switch-flows" value="to-switch">
+                to-switch flows
+              </label>
+              <label class="checkbox-inline">
+                <input type="checkbox" checked="checked" id="to-controller-flows" value="to-controller">
+                to-controller flows
+              </label>
+            </div>
+            <div id="main"></div>
           </div>
         </div> <!-- /.container-fluid -->
       </div> <!-- /#page-content-wrapper -->
     </div> <!-- /#wrapper -->
 
+    <!-- Waiting progess dialog -->
+    <div class="modal modal-dialog" id="waiting-dialog" style="margin-top: 200px;" data-backdrop="static" data-keyboard="false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title" id="generic-modal-title">Wait for Processing...</h4>
+        </div>
+        <div class="modal-body">
+          <div class="progress">
+            <div class="progress-bar progress-bar-striped active" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100" style="width: 80%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script language="javascript">
       $(document).ready(function() {
+        $('#waiting-dialog').modal();
         $.ajax({
           type: "GET",
           url: "/api/topology",
+          headers: {
+            "Authorization": "Basic " + (Cookies.get('auth') || "")
+          },
+          statusCode: {
+            401: function() {
+              window.location.href = "/login.html";
+            }
+          },
           success: function (topology) {
             var nodes = topology['nodes'];
 
             var switches = {}
             for (var k in nodes) {
-              if (nodes[k].type == "switch") {
+              if (nodes[k].type == "switch" || nodes[k].type == "ovs") {
                 switches[k] = nodes[k];
               }
             }
 
             getTemplateAjax('flows.handlebars', function(template) {
-               var context = {'switch': switches};
-               $('#main').html(template(context));
-               $('#flowsTable').DataTable({
-                 'pageLength': 100
-               });
-            }); 
+              var context = {'switch': switches};
+              $('#main').html(template(context));
+              var table = $('#flowsTable').DataTable({
+                'pageLength': 100,
+                'initComplete': function() {
+                }
+              });
+              $('#to-switch-flows, #to-controller-flows').change(function() {
+                var relist = [];
+                if ($('#to-switch-flows').prop('checked')) {
+                  relist.push('(?!CONTROLLER)[a-zA-Z0-9]*');
+                }
+                if ($('#to-controller-flows').prop('checked')) {
+                  relist.push('CONTROLLER');
+                }
+                var regex = '^.*output-action:(' + relist.join('|') + ')(|,.*)$';
+                table.columns(12).search(regex, true, false).draw();
+              });
+              $('#waiting-dialog').modal('hide');
+            });
 
-          },  
+          },
           dataType: "json"
         });
       });
-    </script> 
+    </script>
   </body>
 </html>

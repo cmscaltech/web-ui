@@ -1,0 +1,50 @@
+  <div class="row" style="margin:15px 0 0 0;">
+    <div class="col-md-10 col-md-offset-1">
+      <div class="row">
+        <div class="tab-pane active">
+          <table id="route-management-table" class="table table-condensed table-hover paths">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Length</th>
+                <th>Route</th>
+                <th colspan="2">Rate Limit (kbps)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each paths}}
+              <tr>
+                <td><a href="#" data-toggle="modal" data-target="#ALTORouteRemoveModal" data-route="{{this.path}}" data-id="{{this.id}}"><i style="color: #d35400;" title="Click here to remove this path..." class="fa fa-trash"></i></a></td>
+                <td>{{this.path.length}}</td>
+                <td>{{#each this.path}}<span class="label label-primary">{{this}}</span> {{/each}}</td>
+                <td style="color: #d35400">
+                  {{#tc}}
+                  {{this}}
+                </td>
+                <td>
+                  <button type="button" class="btn btn-default btn-xs tc-update"><i class="fa fa-pencil"></i>Update</button>
+                  <button type="button" class="btn btn-danger btn-xs tc-remove" data-toggle="modal" data-target="#ALTORateRemoveModal"><i class="fa fa-remove"></i>Remove</button>
+                  {{/tc}}
+                  {{^tc}}
+                  No limit
+                </td>
+                <td>
+                  <button type="button" class="btn btn-success btn-xs tc-create"><i class="fa fa-pencil"></i>Create</button>
+                  {{/tc}}
+                </td>
+                <td>
+                  {{#id}}
+                  <a target="_blank" href="/plot_flow_new.html?path_id={{this}}"><i class="fa fa-area-chart"></i></a>
+                  {{/id}}
+                  {{^id}}
+                  {{/id}}
+                </td>
+              </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>

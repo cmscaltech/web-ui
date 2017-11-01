@@ -1,5 +1,5 @@
 <div class="col-md-12">
-  </BR>
+  <br/>
   <table class="table table-condensed" id="flowsTable">
     <thead>
       <tr>
@@ -44,8 +44,10 @@
         <td class="ip">{{ipv4_source}}</td>
         <td class="ip">{{ipv4_destination}}</td>
         <td>{{#each actions}} {{type}}:{{value}} {{/each}}</td>
-        <th><a href="#" onclick='plot_flow("{{clean_id}}", "{{table_id}}", "{{node_id}}");'><i class="fa fa-area-chart"></i></a>
-            <a href="#" data-toggle="modal" data-target="#FlowRemoveModal" data-flow="{{id}}" data-table="{{table_id}}" data-name="{{name}}" data-node="{{node_id}}"><i class="fa fa-trash"></i></a></th>
+        <th>
+          <a target="_blank" href='/plot_flow.html?node={{node_id}}&table={{table_id}}&clean_id={{clean_id}}'><i class="fa fa-area-chart"></i></a>
+          <a href="#" data-toggle="modal" data-target="#FlowRemoveModal" data-flow="{{id}}" data-table="{{table_id}}" data-name="{{name}}" data-node="{{node_id}}"><i class="fa fa-trash"></i></a>
+        </th>
 
       </tr>
         {{/each}}

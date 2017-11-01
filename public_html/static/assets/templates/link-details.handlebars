@@ -2,47 +2,19 @@
   <div class="col-md-3">
     <div class="row">
       <div class="col-md-4 text-right">
-        <span class="details-keys">Node ID:</span>
+        <span class="details-keys">Source Node:</span>
       </div>
       <div class="col-md-8">
-        <span class="details-values">{{ id }}</span>
+        <span class="details-values">{{ sid }}</span>
       </div>
     </div>
 
     <div class="row">
       <div class="col-md-4 text-right">
-        <span class="details-keys">Customize Name:</span>
+        <span class="details-keys">Type:</span>
       </div>
       <div class="col-md-8">
-        <input id="customize-name" data-id="{{ id  }}" type="text" style="background-color: black; width: 100px;"/>
-        <a id="customize-name-apply" href="#" class="btn-sm btn-info">Apply</a>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-4 text-right">
-        <span class="details-keys">Description:</span>
-      </div>
-      <div class="col-md-8">
-        <span class="details-values">{{ description }}</span>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-4 text-right">
-        <span class="details-keys">Hardware:</span>
-      </div>
-      <div class="col-md-8">
-        <span class="details-values">{{ hardware }}</span>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-4 text-right">
-        <span class="details-keys">Software:</span>
-      </div>
-      <div class="col-md-8">
-        <span class="details-values">{{ software }}</span>
+        <span class="details-values">{{ stype }}</span>
       </div>
     </div>
 
@@ -51,43 +23,86 @@
         <span class="details-keys">Address:</span>
       </div>
       <div class="col-md-8">
-        <span class="details-values">{{ip_address}}</span>
+        <span class="details-values">{{ saddr }}</span>
       </div>
     </div>
 
+    {{#sport}}
     <div class="row">
       <div class="col-md-4 text-right">
-        <span class="details-keys">Manufacturer:</span>
+        <span class="details-keys">Port:</span>
       </div>
       <div class="col-md-8">
-        <span class="details-values">{{manufacturer}}</span>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-4 text-right">
-        <span class="details-keys">OF Connectors:</span>
-      </div>
-      <div class="col-md-8">
-        <span class="details-values">{{ len connectors }}</span>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-4 text-right">
-        <span class="details-keys">OF Tables:</span>
-      </div>
-      <div class="col-md-8">
-        <span class="details-values">{{ len tables }}</span>
+        <span class="details-values">{{ this }}</span>
       </div>
     </div>
 
     <div class="row">
       <div class="col-md-12 text-right">
-        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#FlowAddModal" data-node="{{id}}"><i class="fa fa-plus"></i> Add a new flow</a>
-        <a href="#" class="btn btn-danger" data-toggle="modal" data-target="#FlowLowPriorityRemoveModal" data-node="{{id}}"><i class="fa fa-trash"></i> Remove low priority flows</a>
+        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#FlowAddModal" data-node="{{../sid}}"><i class="fa fa-plus"></i> Add a new flow</a>
+        <a href="#" class="btn btn-danger" data-toggle="modal" data-target="#FlowLowPriorityRemoveModal" data-node="{{../sid}}"><i class="fa fa-trash"></i> Remove low priority flows</a>
       </div>
     </div>
+    {{/sport}}
+
+    <hr />
+
+    <div class="row">
+      <div class="col-md-4 text-right">
+        <span class="details-keys">Target Node:</span>
+      </div>
+      <div class="col-md-8">
+        <span class="details-values">{{ tid }}</span>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-4 text-right">
+        <span class="details-keys">Type:</span>
+      </div>
+      <div class="col-md-8">
+        <span class="details-values">{{ ttype }}</span>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-4 text-right">
+        <span class="details-keys">Address:</span>
+      </div>
+      <div class="col-md-8">
+        <span class="details-values">{{ taddr }}</span>
+      </div>
+    </div>
+
+    {{#tport}}
+    <div class="row">
+      <div class="col-md-4 text-right">
+        <span class="details-keys">Port:</span>
+      </div>
+      <div class="col-md-8">
+        <span class="details-values">{{ this }}</span>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-12 text-right">
+        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#FlowAddModal" data-node="{{../tid}}"><i class="fa fa-plus"></i> Add a new flow</a>
+        <a href="#" class="btn btn-danger" data-toggle="modal" data-target="#FlowLowPriorityRemoveModal" data-node="{{../tid}}"><i class="fa fa-trash"></i> Remove low priority flows</a>
+      </div>
+    </div>
+    {{/tport}}
+
+    <hr />
+
+    <div class="row">
+      <div class="col-md-4 text-right">
+        <span class="details-keys">Link Capacity:</span>
+      </div>
+      <div class="col-md-8">
+        <span class="details-values">{{ capacity }}</span>
+      </div>
+    </div>
+
   </div>
 
   <div class="col-md-9">
@@ -149,7 +164,6 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {{#each tables}}
                   {{#each flows}}
                   <tr class="{{class}}">
                   <td>
@@ -171,10 +185,9 @@ That means that is running on the switch"></i>
                     <td class="ip">{{ipv4_source}}</td>
                     <td class="ip">{{ipv4_destination}}</td>
                     <td>{{#each actions}} {{type}}:{{value}} {{/each}}</td>
-                    <th><a target="_blank" href="/plot_flow_new.html?node={{node_id}}&table={{table_id}}&clean_id={{clean_id}}&name={{name}}"><i class="fa fa-area-chart"></i></a>
+                    <th><a target="_blank" href="/plot_flow_new.html?node={{node_id}}&table={{table_id}}&clean_id={{clean_id}}"><i class="fa fa-area-chart"></i></a>
                         <a href="#" data-toggle="modal" data-target="#FlowRemoveModal" data-flow="{{id}}" data-table="{{table_id}}" data-name="{{name}}" data-node="{{node_id}}"><i class="fa fa-trash"></i></a></th>
                   </tr>
-                  {{/each}}
                   {{/each}}
                 </tbody>
               </table>

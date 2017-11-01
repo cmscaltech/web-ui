@@ -12,3 +12,7 @@ template_dir = "/var/lib/data/python-odl/templates/"
 # Where is your ofx-watchdog storing the rrd files ?
 # This is the absolute path of rrd files
 rrd_dir = "/usr/src/beraldo/sc15/rrd"
+
+# Web UI authorization
+ui_user = "guest"
+ui_pass = "guest"

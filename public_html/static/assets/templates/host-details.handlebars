@@ -1,0 +1,64 @@
+  <div class="row" style="margin:15px 0 0 0;">
+    <div class="col-md-4">
+      <div class="row">
+        <div class="col-md-6 text-right">
+          <span class="details-keys">Host ID:</span>
+        </div>
+        <div class="col-md-6">
+          <span class="details-values">{{ id }}</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4 text-right">
+          <span class="details-keys">Customize Name:</span>
+        </div>
+        <div class="col-md-8">
+          <input id="customize-name" data-id="{{ name }}" type="text" style="background-color: black;"/>
+        <a id="customize-name-apply" href="#" class="btn-sm btn-info">Apply</a>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 text-right">
+          <span class="details-keys">Host Name:</span>
+        </div>
+        <div class="col-md-6">
+          <span class="details-values">{{ name }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="row">
+          <div class="tab-pane active">
+          <table class="table table-condensed paths">
+                  <thead>
+                    <tr>
+                      <th>IP Address</th>
+                      <th>MAC Address</th>
+                      <th>Active</th>
+                      <th>Attachment Switch</th>
+                      <th>Attachment Port</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="ip">{{ip}}</td>
+                      <td class="eth">{{mac}}</td>
+                      <td>
+                        {{#active}}
+                        <i class="fa fa-fw fa-check" style="color: green;"></i>
+                        {{/active}}
+                        {{^active}}
+                        <i class="fa fa-fw fa-close" style="color: red;"></i>
+                        {{/active}}
+                      </td>
+                      <td>{{attachment_switch}}</td>
+                      <td>{{attachment_port}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+          </div>
+      </div>
+    </div>
+  </div>

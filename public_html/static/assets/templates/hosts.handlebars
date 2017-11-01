@@ -1,0 +1,34 @@
+<div class="col-md-12">
+  </BR>
+  <table class="table table-condensed" id="hostsTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>IP</th>
+        <th>MAC</th>
+        <th>Active</th>
+        <th>Attachement Switch</th>
+        <th>Attachement Port</th>
+      </tr>
+    </thead>
+   <tbody>
+  {{#each host}}
+    <tr style="color:white;" class="accordion-toggle">
+      <td>{{id}}</td>
+      <td class="ip">{{ip}}</td>
+      <td class="eth">{{mac}}</td>
+      <td>
+      {{#active}}
+        <i class="fa fa-fw fa-check" style="color: green;"></i>
+      {{/active}}
+      {{^active}}
+        <i class="fa fa-fw fa-close" style="color: red;"></i>
+      {{/active}}
+      </td>
+      <td>{{attachment_switch}}</td>
+      <td>{{attachment_port}}</td>
+    </tr>
+  {{/each}}
+    </tbody>
+  </table>
+</div>

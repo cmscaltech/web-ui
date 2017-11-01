@@ -1,0 +1,40 @@
+  <div class="row" style="margin:15px 0 0 0;">
+    <div class="col-md-10 col-md-offset-1">
+      <div class="row">
+        <div class="tab-pane active">
+          <table class="table table-condensed table-hover paths">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Source</th>
+                <th>Destination</th>
+                <th>Total Size (Byte)</th>
+                <!-- <th>Remain Volume (MB)</th> -->
+                <th>Speed (Net.)</th>
+                <th>Speed (Avg.)</th>
+                <!-- <th>Rate Limit (kbps)</th> -->
+                <th>Status</th>
+                <th>Progress</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each tasks}}
+              <tr>
+                <td>{{uuid}}</td>
+                <td>{{source}}</td>
+                <td>{{target}}</td>
+                <td>{{size}}</td>
+                <!-- <td>{{remain}}</td> -->
+                <td>{{net_speed}}</td>
+                <td>{{avg_speed}}</td>
+                <!-- <td>{{limit}}</td> -->
+                <td>{{status}}</td>
+                <td>{{progress}}</td>
+              </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>

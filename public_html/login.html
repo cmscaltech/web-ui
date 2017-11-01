@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta content="utf-8" http-equiv="encoding">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>OpenFlow Next Generation Project - Web GUI</title>
+
+    <!-- CSS -->
+    <link type="text/css" href="/static/assets/css/font-awesome.min.css" rel="stylesheet">
+    <link type="text/css" href="/static/assets/css/bootstrap.min.css" rel="stylesheet">
+
+    <link type="text/css" href="/static/assets/css/main.css" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+  </head>
+
+  <body>
+    <script src="/static/assets/js/jquery-1.11.3.min.js"></script>
+    <script src="/static/assets/js/d3.min.js"></script>
+    <script src="/static/assets/js/bootstrap.min.js"></script>
+    <script src="/static/assets/js/js.cookie.js"></script>
+
+    <div class="modal show" style="margin-top: 5%;" id="loginModal" tabindex="-1">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Please Sign In</h4>
+          </div>
+          <div class="modal-body">
+            <form id="loginForm" action="#" class="form-horizontal">
+              <div class="form-group">
+                <div class="col-sm-12">
+                  <p id="invalide" class="text-danger" style="display: none">
+                    Unable to login
+                  </p>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-12">
+                  <input type="text" id="username" name="username" class="form-control" placeholder="Username">
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-12">
+                  <input type="password" id="password" name="password" class="form-control" placeholder="Password">
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-12">
+                  <button id="login" type="button" class="form-control btn btn-warning btn-lg">Login</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+     $("#login").click(function(e) {
+       var auth = btoa($("#username").val() + ':' + $("#password").val());
+       $.ajax({
+         type: "GET",
+         url: "/api/verify",
+         headers: {
+           "Authorization": "Basic " + auth
+         },
+         success: function (data) {
+           Cookies.set('auth', auth);
+           window.location.href = "/index.html";
+         },
+         error: function () {
+           $("#invalide").show();
+         },
+         dataType: "json"
+       })
+     });
+
+     $("#username,#password").keypress(function (e) {
+       if (e.which == 13) {
+         $("#login").click();
+       }
+     });
+    </script>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-  <div class="row" style="margin-top:15px; margin-right: 0px;">
+  <div class="row" style="margin:15px 0 0 0;">
     <div class="col-md-4">
       <div class="row">
         <div class="col-md-6 text-right">
@@ -21,7 +21,7 @@
     <div class="col-md-8">
       <div class="row">
           <div class="tab-pane active">
-          <table class="table table-condensed paths">
+          <table id="path-details-table" class="table table-condensed table-hover paths">
                   <thead>
                     <tr>
                       <th></th>
@@ -32,7 +32,7 @@
                   <tbody>
                     {{#each paths}}
                     <tr>
-                      <td><a href="#" data-toggle="modal" data-target="#PathFlowsConfirmationModal" data-path="{{this.uid}}"><i style="color: orange;" title="Click here to activate this path, installing flows..." class="fa fa-bolt"></i></a></td>
+                      <td><a href="#" data-toggle="modal" data-target="#PathFlowsConfirmationModal" data-path="{{this.uid}}" data-pathlist="{{this.path}}"><i style="color: orange;" title="Click here to activate this path, installing flows..." class="fa fa-bolt"></i></a></td>
                       <td>{{this.path.length}}</td>
                       <td>{{#each this.path}}<span class="label label-primary">{{this}}</span> {{/each}}</td>
                     </tr>

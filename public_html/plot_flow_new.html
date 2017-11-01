@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta content="utf-8" http-equiv="encoding">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>OpenFlow Next Generation Project - Web GUI</title>
+
+    <!-- CSS -->
+    <link type="text/css" href="/static/assets/css/font-awesome.min.css" rel="stylesheet">
+    <link type="text/css" href="/static/assets/css/bootstrap.min.css" rel="stylesheet">
+
+    <link type="text/css" href="/static/assets/css/main.css" rel="stylesheet">
+    <link type="text/css" href="/static/assets/css/chart.css" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+  </head>
+
+  <body>
+    <script src="/static/assets/js/jquery-1.11.3.min.js"></script>
+    <script src="/static/assets/js/d3.min.js"></script>
+    <script src="/static/assets/js/bootstrap.min.js"></script>
+    <script src="/static/assets/js/handlebars.min-latest.js"></script>
+    <script src="/static/assets/js/js.cookie.js"></script>
+
+    <script src="/static/assets/js/main.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+    <div id="wrapper">
+
+      <!-- Page Content -->
+      <div id="page-content-wrapper">
+        <div class="container-fluid">
+
+          <div class="row">
+            <div class="col-md-12">
+              <h1>Plot Flow Traffic</h1>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-12">
+              <div class="btn-group btn-group-sm" role="group" aria-label="...">
+                <div id="show-mode" class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Show Mode
+                    <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a id="show-single-flow" href="#">Single Flow</a></li>
+                    <li><a id="show-round-trip" href="#">Round Trip Flow</a></li>
+                    <li><a id="show-path" href="#">Explore Path</a></li>
+                    <li><a id="show-round-trip-path" href="#">Explore Round Trip Path</a></li>
+                    <li><a id="show-all-flow" href="#">All Flow</a></li>
+                  </ul>
+                </div>
+                <button type="button" id="flip" class="btn btn-default"><i class="fa fa-exchange"></i> Flip</button>
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Time Scale
+                    <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a id="last-15min" href="#">Last 15 min</a></li>
+                    <li><a id="last-2hour" href="#">Last 2 hours</a></li>
+                    <li><a id="last-12hour" href="#">Last 12 hours</a></li>
+                    <li><a id="last-3day" href="#">Last 3 days</a></li>
+                    <li><a id="last-1week" href="#">Last 1 week</a></li>
+                    <li><a id="last-1month" href="#">Last 1 month</a></li>
+                    <li><a id="last-3month" href="#">Last 3 months</a></li>
+                    <li><a id="last-1year" href="#">Last 1 year</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-12" style="position:absolute">
+              <h3 class="pull-right" style="color:white;margin:30px 100px 30px 50px;">
+                <strong>Flow name:</strong> <span id="name"></span>
+                <br />
+                <span>
+                  Max: <span id="max">0.0</span> <span class="unit">Gbps</span>,
+                  Avg: <span id="avg">0.0</span> <span class="unit">Gbps</span>,
+                  Min: <span id="min">0.0</span> <span class="unit">Gbps</span>
+                </span>
+              </h3>
+            </div>
+          </div>
+
+
+          <div class="row">
+            <div class="col-lg-12">
+              <div id="plot-flow-d3"></div>
+            </div>
+            <div id="plot-flow-extra" class="col-lg-12">
+            </div>
+          </div>
+
+        </div> <!-- /.container-fluid -->
+      </div> <!-- /#page-content-wrapper -->
+
+    </div> <!-- /#wrapper -->
+
+    <script language="javascript">
+     /* Seconds for refreshing traffic stats*/
+     var REFRESH_FREQ = 5;
+     var SINGLE_FLOW = 0;
+     var ROUND_TRIP = 1;
+     var EXPLORE_PATH = 2;
+     var EXPLORE_ROUND_TRIP_PATH = 3;
+     var ALL_FLOW = 4;
+     var plot_mode = SINGLE_FLOW;
+     var time_scale = 60*15;
+     var flip = false;
+
+     /* var margin = {t: 100, r: 20, b: 30, l: 50},
+      *     width = $("#plot-flow-d3").parent().width(),
+      *     height = 300;
+      */
+     var layout = function(title, margin, height) {
+       return {
+         yaxis: {
+           title: title || "Gbps",
+           rangemode: "tozero",
+           titlefont: {
+             color: 'white'
+           },
+           tickfont: {
+             color: 'white'
+           },
+         },
+         xaxis: {
+           showgrid: true,
+           tickformat: "%H:%M",
+           titlefont: {
+             color: 'white'
+           },
+           tickfont: {
+             color: 'white'
+           },
+         },
+         margin: margin || {t: 100, r: 20, b: 30, l: 50},
+         width: $("#plot-flow-d3").parent().width(),
+         height: height || 600,
+         paper_bgcolor: "rgba(0,0,0,0)",
+         plot_bgcolor: "rgba(0,0,0,0)",
+         showlegend: true,
+         legend: {
+           font: {
+             color: 'white'
+           },
+           orientation: 'h'
+         }
+       }
+     };
+
+     var extraPlotDiv = [];
+
+     // Helper Functions
+     var create_scatter_line = function(x, y, name, legend) {
+       return {
+         type: 'scatter',
+         mode: 'lines',
+         x: x,
+         y: y,
+         name: name,
+         legend: legend,
+         textfont: {
+           color: 'white'
+         },
+         line: {
+           width: 3
+         }
+       }
+     };
+
+     var ewma = function(line) {
+	     var new_line = []
+	     var last = 0;
+	     for (var i=0; i < line.length; i++) {
+		     var last = last + line[i];
+		     var x = 0.05 * last / (i+1) + 0.95 * line[i]
+		     new_line.push(x)
+	     }
+	     return new_line;
+     }
+
+     var clear_plot_div = function() {
+       extraPlotDiv.forEach(function(div) {
+         Plotly.purge(div);
+       });
+       $('#plot-flow-extra').html('');
+       extraPlotDiv = [];
+     }
+
+     var now = new Date();
+     var last = new Date(now - 60*15);
+     // Define the lines
+     var bytesline = create_scatter_line([now, last], [0, 0], 'main', '');
+     var bytesline2 = create_scatter_line([now, last], [0, 0], 'return', '');
+
+     plotDiv = document.getElementById("plot-flow-d3");
+     Plotly.newPlot(plotDiv, [bytesline, bytesline2], layout(), {showLink: false});
+
+     var plot_main_flow = function(node, table, clean_id, round_trip) {
+       $.ajax({
+         type: "GET",
+         contentType: "application/json; charset=utf-8",
+         url: "/api/stats/flow/" + node + "/" + table + "/" + clean_id + "/" + time_scale,
+         headers: {
+           "Authorization": "Basic " + (Cookies.get('auth') || "")
+         },
+         statusCode: {
+           401: function() {
+             window.location.href = "/login.html";
+           }
+         },
+         success: function(json) {
+           console.log(json);
+
+           var main_time_line = [];
+           var main_bytes_line = [];
+           var oposite_time_line = [];
+           var oposite_bytes_line = [];
+
+           main_time_line = json.main.map(function(d) {
+             return d3.time.format("%Y-%m-%d %H:%M:%S").parse(d.date);
+           });
+           main_bytes_line = json.main.map(function(d) {
+             return d.bytes;
+           });
+
+           if (round_trip && json.oposite) {
+             oposite_time_line = json.oposite.map(function(d) {
+               return d3.time.format("%Y-%m-%d %H:%M:%S").parse(d.date);
+             });
+             oposite_bytes_line = json.oposite.map(function(d) {
+               return d.bytes;
+             });
+           }
+
+           if (!round_trip && flip) {
+             if (json.oposite) {
+               main_time_line = json.oposite.map(function(d) {
+                 return d3.time.format("%Y-%m-%d %H:%M:%S").parse(d.date);
+               });
+               main_bytes_line = json.oposite.map(function(d) {
+                 return d.bytes;
+               });
+             } else {
+               main_bytes_line = main_bytes_line.map(function(d) {
+                 return 0;
+               });
+               show_msg("There is no return flow in this node", "alert-warning", 3000);
+             }
+           }
+
+           all_bytes_line = main_bytes_line.concat(oposite_bytes_line);
+
+           level = Math.log2(d3.max(all_bytes_line));
+           if (level > 27) {
+             ratio = 1024 * 1024 * 1024;
+             unit = "Gbps";
+           } else if (level > 17) {
+             ratio = 1024 * 1024;
+             unit = "Mbps";
+           } else if (level > 7) {
+             ratio = 1024;
+             unit = "Kbps";
+           } else {
+             ratio = 1;
+             unit = "bps";
+           }
+
+           main_bytes_line = main_bytes_line.map(function(d) {
+             return 8 * d / ratio;
+           });
+           oposite_bytes_line = oposite_bytes_line.map(function(d) {
+             return 8 * d / ratio;
+           });
+
+           var maximum = d3.max(main_bytes_line) || 0;
+           var average = d3.mean(main_bytes_line) || 0;
+           var minimum = d3.min(main_bytes_line) || 0;
+
+           $("#max").html(maximum.toFixed(2));
+           $("#avg").html(average.toFixed(2));
+           $("#min").html(minimum.toFixed(2));
+           $(".unit").html(unit);
+
+           plotDiv.data = [
+             create_scatter_line(main_time_line, main_bytes_line,
+                                 "main: " + node + ' - ' + clean_id, node)
+           ];
+           if (round_trip && oposite_bytes_line) {
+             plotDiv.data.push(
+               create_scatter_line(oposite_time_line, oposite_bytes_line,
+                                   "return: " + node + ' - ' + clean_id, node)
+             );
+           }
+           clear_plot_div();
+           Plotly.relayout(plotDiv, layout(unit));
+           Plotly.redraw(plotDiv);
+         },
+         dataType: "json"
+       });
+     };
+
+     var plot_explore_path = function(node, table, clean_id, round_trip) {
+       $.ajax({
+         type: "GET",
+         contentType: "application/json; charset=utf-8",
+         url: "/api/stats/path/" + node + "/" + table + "/" + clean_id + "/" + time_scale,
+         headers: {
+           "Authorization": "Basic " + (Cookies.get('auth') || "")
+         },
+         statusCode: {
+           401: function() {
+             window.location.href = "/login.html";
+           }
+         },
+         success: function(json) {
+           var all_bytes = [];
+
+           var main_time_line = [];
+           var main_bytes_line = [];
+           var oposite_time_line = [];
+           var oposite_bytes_line = [];
+
+           var main_node = json.shift();
+           if (main_node) {
+             main_time_line = main_node.main.map(function(d) {
+               return d3.time.format("%Y-%m-%d %H:%M:%S").parse(d.date);
+             });
+             main_bytes_line = main_node.main.map(function(d) {
+               return d.bytes;
+             });
+
+             if (round_trip && main_node.oposite) {
+               oposite_time_line = main_node.oposite.map(function(d) {
+                 return d3.time.format("%Y-%m-%d %H:%M:%S").parse(d.date);
+               });
+               oposite_bytes_line = main_node.oposite.map(function(d) {
+                 return d.bytes;
+               });
+               all_bytes = all_bytes.concat(oposite_bytes_line);
+             }
+
+             if (!round_trip && flip) {
+               if (main_node.oposite) {
+                 main_time_line = main_node.oposite.map(function(d) {
+                   return d3.time.format("%Y-%m-%d %H:%M:%S").parse(d.date);
+                 });
+                 main_bytes_line = main_node.oposite.map(function(d) {
+                   return d.bytes;
+                 });
+               } else {
+                 main_bytes_line = main_bytes_line.map(function(d) {
+                   return 0;
+                 });
+                 show_msg("There is no return flow in some nodes", "alert-warning", 3000);
+               }
+             }
+
+             all_bytes = all_bytes.concat(main_bytes_line);
+           }
+
+           var extra_nodes = [];
+           json.forEach(function(n) {
+             var node = {id: n.id};
+             node.main_time_line = n.main.map(function(d) {
+               return d3.time.format("%Y-%m-%d %H:%M:%S").parse(d.date);
+             });
+             node.main_bytes_line = n.main.map(function(d) {
+               return d.bytes;
+             });
+
+             if (round_trip && n.oposite) {
+               node.oposite_time_line = n.oposite.map(function(d) {
+                 return d3.time.format("%Y-%m-%d %H:%M:%S").parse(d.date);
+               });
+               node.oposite_bytes_line = n.oposite.map(function(d) {
+                 return d.bytes;
+               });
+               all_bytes = all_bytes.concat(node.oposite_bytes_line);
+             }
+
+             if (!round_trip && flip) {
+               if (n.oposite) {
+                 node.main_time_line = n.oposite.map(function(d) {
+                   return d3.time.format("%Y-%m-%d %H:%M:%S").parse(d.date);
+                 });
+                 node.main_bytes_line = n.oposite.map(function(d) {
+                   return d.bytes;
+                 });
+               } else {
+                 node.main_bytes_line = main_bytes_line.map(function(d) {
+                   return 0;
+                 });
+                 show_msg("There is no return flow in node: " + n.id, "alert-warning", 3000);
+               }
+             }
+
+             all_bytes = all_bytes.concat(node.main_bytes_line);
+             extra_nodes.push(node);
+           });
+
+           level = Math.log2(d3.max(all_bytes));
+           if (level > 27) {
+             ratio = 1024 * 1024 * 1024;
+             unit = "Gbps";
+           } else if (level > 17) {
+             ratio = 1024 * 1024;
+             unit = "Mbps";
+           } else if (level > 7) {
+             ratio = 1024;
+             unit = "Kbps";
+           } else {
+             ratio = 1;
+             unit = "bps";
+           }
+
+           all_bytes = all_bytes.map(function(d) {
+             return 8 * d / ratio;
+           });
+
+           var maximum = d3.max(all_bytes) || 0;
+           var average = d3.mean(all_bytes) || 0;
+           var minimum = d3.min(all_bytes) || 0;
+
+           $("#max").html(maximum.toFixed(2));
+           $("#avg").html(average.toFixed(2));
+           $("#min").html(minimum.toFixed(2));
+           $(".unit").html(unit);
+
+           main_bytes_line = main_bytes_line.map(function(d) {
+             return 8 * d / ratio;
+           });
+           plotDiv.data = [
+             create_scatter_line(main_time_line, main_bytes_line,
+                                 'main: ' + main_node.id, main_node.id)
+           ];
+
+           if (oposite_bytes_line) {
+             oposite_bytes_line = oposite_bytes_line.map(function(d) {
+               return 8 * d / ratio;
+             });
+             plotDiv.data.push(
+               create_scatter_line(oposite_time_line, oposite_bytes_line,
+                                 'oposite: ' + main_node.id, main_node.id)
+             );
+           }
+           clear_plot_div();
+           plot_height = 730 / (extra_nodes.length + 1);
+           // Redraw plot for main flow
+           Plotly.relayout(plotDiv, layout(unit, null, plot_height + 70));
+           Plotly.redraw(plotDiv);
+
+           // Draw plots for each extra flows
+           extra_nodes.forEach(function(n) {
+             var div = document.createElement('div');
+             var data = [];
+             $('#plot-flow-extra').append(div);
+             n.main_bytes_line = n.main_bytes_line.map(function(d) {
+               return 8 * d / ratio;
+             });
+             data.push(
+               create_scatter_line(n.main_time_line, n.main_bytes_line,
+                                   'main: ' + n.id, n.id)
+             );
+             if (n.oposite_bytes_line) {
+               n.oposite_bytes_line = n.oposite_bytes_line.map(function(d) {
+                 return 8 * d / ratio;
+               });
+               data.push(
+                 create_scatter_line(n.oposite_time_line, n.oposite_bytes_line,
+                                     'return: ' + n.id, n.id)
+               );
+             }
+             Plotly.newPlot(div, data, layout(unit, {t: 30, r: 20, b: 30, l: 50}, plot_height), {showLink: false});
+             extraPlotDiv.push(div);
+           });
+         }
+       }
+       );
+     }
+
+     var plot_all_flow = function(name) {
+       $.ajax({
+         type: "GET",
+         contentType: "application/json; charset=utf-8",
+         url: "/api/stats/all/flow/" + name + "/" + time_scale,
+         headers: {
+           "Authorization": "Basic " + (Cookies.get('auth') || "")
+         },
+         statusCode: {
+           401: function() {
+             window.location.href = "/login.html";
+           }
+         },
+         success: function(json) {
+           console.log(json);
+
+           data = [];
+           all_bytes = [];
+           Object.keys(json).forEach(function(node_id) {
+             flows = json[node_id];
+             Object.keys(flows).forEach(function(flow_id) {
+               bytes_line = flows[flow_id].map(function(f) {
+                 return f.bytes;
+               });
+               all_bytes = all_bytes.concat(bytes_line);
+               time_line = flows[flow_id].map(function(f) {
+                 return d3.time.format("%Y-%m-%d %H:%M:%S").parse(f.date);
+               });
+               data.push(
+                 create_scatter_line(time_line, bytes_line,
+                                     node_id + ' - ' + flow_id, node_id)
+               );
+
+             });
+           });
+
+           level = Math.log2(d3.max(all_bytes));
+           if (level > 27) {
+             ratio = 1024 * 1024 * 1024;
+             unit = "Gbps";
+           } else if (level > 17) {
+             ratio = 1024 * 1024;
+             unit = "Mbps";
+           } else if (level > 7) {
+             ratio = 1024;
+             unit = "Kbps";
+           } else {
+             ratio = 1;
+             unit = "bps";
+           }
+
+           all_bytes = all_bytes.map(function(d) {
+             return 8 * d / ratio;
+           });
+
+           var maximum = d3.max(all_bytes) || 0;
+           var average = d3.mean(all_bytes) || 0;
+           var minimum = d3.min(all_bytes) || 0;
+
+           $("#max").html(maximum.toFixed(2));
+           $("#avg").html(average.toFixed(2));
+           $("#min").html(minimum.toFixed(2));
+           $(".unit").html(unit);
+
+           data.forEach(function(d) {
+             d.y = d.y.map(function(y) {
+               return 8 * y / ratio;
+             });
+           });
+
+           plotDiv.data = data;
+           clear_plot_div();
+           Plotly.relayout(plotDiv, layout(unit));
+           Plotly.redraw(plotDiv);
+         },
+         dataType: "json"
+       });
+     };
+
+     var plot_path_flow = function(path_id) {
+       $.ajax({
+         type: "GET",
+         contentType: "application/json; charset=utf-8",
+         url: "/api/stats/e2e/" + path_id + "/" + time_scale,
+         headers: {
+           "Authorization": "Basic " + (Cookies.get('auth') || "")
+         },
+         statusCode: {
+           401: function() {
+             window.location.href = "/login.html";
+           }
+         },
+         success: function(json) {
+           console.log(json);
+
+           data = [];
+           var main_time_line = [];
+           var main_bytes_line = [];
+           var oposite_time_line = [];
+           var oposite_bytes_line = [];
+
+           main_time_line = json.main.map(function(d) {
+             return d3.time.format("%Y-%m-%d %H:%M:%S").parse(d.date);
+           });
+           main_bytes_line = json.main.map(function(d) {
+             return d.bytes;
+           });
+           var label = json.source + ' -> ' + json.target;
+
+           if (flip) {
+             label = json.target + ' -> ' + json.source;
+             if (json.oposite) {
+               main_time_line = json.oposite.map(function(d) {
+                 return d3.time.format("%Y-%m-%d %H:%M:%S").parse(d.date);
+               });
+               main_bytes_line = json.oposite.map(function(d) {
+                 return d.bytes;
+               });
+             } else {
+               main_bytes_line = main_bytes_line.map(function(d) {
+                 return 0;
+               });
+               show_msg("There is no return path between these two endpoints", "alert-warning", 3000);
+             }
+           }
+
+           all_bytes_line = main_bytes_line.concat(oposite_bytes_line);
+
+           level = Math.log2(d3.max(all_bytes_line));
+           if (level > 27) {
+             ratio = 1024 * 1024 * 1024;
+             unit = "Gbps";
+           } else if (level > 17) {
+             ratio = 1024 * 1024;
+             unit = "Mbps";
+           } else if (level > 7) {
+             ratio = 1024;
+             unit = "Kbps";
+           } else {
+             ratio = 1;
+             unit = "bps";
+           }
+
+           main_bytes_line = main_bytes_line.map(function(d) {
+             return 8 * d / ratio;
+           });
+           oposite_bytes_line = oposite_bytes_line.map(function(d) {
+             return 8 * d / ratio;
+           });
+
+           var maximum = d3.max(main_bytes_line) || 0;
+           var average = d3.mean(main_bytes_line) || 0;
+           var minimum = d3.min(main_bytes_line) || 0;
+
+           $("#max").html(maximum.toFixed(2));
+           $("#avg").html(average.toFixed(2));
+           $("#min").html(minimum.toFixed(2));
+           $(".unit").html(unit);
+
+           plotDiv.data = [
+             create_scatter_line(main_time_line, main_bytes_line,
+                                 label)
+           ];
+           clear_plot_div();
+           Plotly.relayout(plotDiv, layout(unit));
+           Plotly.redraw(plotDiv);
+         },
+         dataType: "json"
+       });
+     }
+
+     var plot_flow_traffic = function() {
+       var node = getParameterByName("node");
+       var table = getParameterByName("table");
+       var clean_id = getParameterByName("clean_id");
+       var name = getParameterByName("name");
+       $("#name").html(name);
+
+       var path_id = getParameterByName("path_id");
+
+       if (path_id) {
+         $("#show-mode").hide();
+         plot_path_flow(path_id);
+         return;
+       }
+
+       // load the external data
+       $("#show-mode").show();
+       switch (plot_mode) {
+         case SINGLE_FLOW:
+           plot_main_flow(node, table, clean_id);
+           break;
+         case ROUND_TRIP:
+           plot_main_flow(node, table, clean_id, true);
+           break;
+         case EXPLORE_PATH:
+           plot_explore_path(node, table, clean_id);
+           break;
+         case EXPLORE_ROUND_TRIP_PATH:
+           plot_explore_path(node, table, clean_id, true);
+           break;
+         case ALL_FLOW:
+           if (name) {
+             plot_all_flow(name);
+           } else {
+             plot_main_flow(node, table, clean_id, true);
+           }
+           break;
+         default:
+           plot_main_flow(node, table, clean_id);
+       }
+     };
+
+     plot_flow_traffic();
+     var plot_flow_interval = setInterval(plot_flow_traffic, REFRESH_FREQ * 1000);
+    </script>
+
+    <script src="/static/assets/js/events.js"></script>
+
+  </body>
+</html>
